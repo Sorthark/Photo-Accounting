@@ -1,0 +1,71 @@
+@use './variables' as *;
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  font-family: 'PingFang SC', 'Source Han Sans SC', 'Microsoft YaHei', sans-serif;
+  font-size: 14px;
+  color: $color-text;
+  background: $color-bg;
+  -webkit-font-smoothing: antialiased;
+}
+
+.card {
+  background: $color-card;
+  border-radius: $radius-md;
+  box-shadow: $shadow-card;
+  padding: 20px;
+}
+
+.btn-primary {
+  background: $color-brown !important;
+  border-color: $color-brown !important;
+  color: #fff !important;
+
+  &:hover {
+    background: #8f7354 !important;
+    border-color: #8f7354 !important;
+  }
+}
+
+.btn-secondary {
+  background: #f0ece5 !important;
+  border-color: #e8e2d8 !important;
+  color: $color-text-secondary !important;
+
+  &:hover {
+    background: #e8e2d8 !important;
+  }
+}
+
+.project-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+.el-input__wrapper,
+.el-select__wrapper {
+  border-radius: $radius-sm !important;
+}
+
+.el-table {
+  --el-table-border-color: #{$color-border};
+  --el-table-header-bg-color: #faf8f5;
+  --el-table-row-hover-bg-color: #faf8f5;
+}
