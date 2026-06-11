@@ -3,7 +3,7 @@ builder = "nixpacks"
 buildCommand = "npm run build:deploy"
 
 [deploy]
-startCommand = "cd server && npx --yes tsx src/index.ts"
+startCommand = "npm install --prefix server && npm run start --prefix server"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
