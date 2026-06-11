@@ -40,7 +40,7 @@ function handleLogout() {
   <aside class="sidebar">
     <div class="sidebar-header">
       <el-icon :size="22" class="logo-icon"><Camera /></el-icon>
-      <span class="logo-text">摄影计账</span>
+      <span class="logo-text">Photo Accounting</span>
     </div>
 
     <nav class="sidebar-nav">

@@ -1,35 +1,67 @@
-# 摄影记账
+# Photo Accounting
 
-米白色护眼风格的摄影工作室记账 Web 应用。
+A creamy white, eye-friendly photography studio bookkeeping web app.
 
-## 技术栈
+## Tech Stack
 
 - Vue 3 + TypeScript + Vite
 - Element Plus + Element Plus Icons
-- Pinia 状态管理
-- Day.js 日期处理
-- SCSS 样式变量
+- Pinia, Day.js, SCSS
 
-## 功能
+## Features
 
-- 三栏布局：左侧导航、中间主内容、右侧统计
-- 月历视图：月份切换、今日跳转、彩色事件标签
-- 快速录入：表单校验、保存与清空
-- 最近录入表格：编辑、删除
-- 本月项目金额统计：按项目分类汇总
+- Login-protected dashboard
+- Calendar, entry form, income/expense tracking
+- Project management, statistics, CSV export
+- Hidden calendar easter egg (9+ entries per month)
 
-## 启动
+## Run Locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-浏览器访问 http://localhost:5173
+Open http://localhost:5173
 
-## 构建
+## Build
 
 ```bash
 npm run build
 npm run preview
 ```
+
+## Login (Demo Accounts)
+
+The app uses **frontend demo authentication** — no backend server yet.
+
+| Username | Password   | Notes              |
+|----------|------------|--------------------|
+| `admin`  | `123456`   | Default admin      |
+| `studio` | `studio123`| Studio account     |
+
+Share the **deployed site URL** plus one of the accounts above so others can log in.
+
+> Session is stored in the browser (`sessionStorage`). Closing the tab ends the session.
+
+## Share With Others (Deploy)
+
+1. Build: `npm run build`
+2. Deploy the `dist/` folder to any static host, for example:
+   - [GitHub Pages](https://pages.github.com/)
+   - [Vercel](https://vercel.com/)
+   - [Netlify](https://www.netlify.com/)
+3. Send collaborators the public URL and demo login credentials.
+
+### GitHub Pages (example)
+
+```bash
+npm run build
+# Push dist to gh-pages branch or use GitHub Actions
+```
+
+Repository: https://github.com/Sorthark/Photo-Accounting
+
+## Production Auth (Future)
+
+For real multi-user login, replace `src/stores/auth.ts` with a backend API (JWT/session) and user database. The current demo store is for prototyping only.

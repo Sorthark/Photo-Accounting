@@ -71,7 +71,7 @@ function downloadCsv() {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  link.download = `摄影计账报表_${dayjs().format('YYYYMMDD')}.csv`
+  link.download = `Photo_Accounting_Report_${dayjs().format('YYYYMMDD')}.csv`
   link.click()
   URL.revokeObjectURL(url)
   ElMessage.success(`已导出 ${list.length} 条记录`)

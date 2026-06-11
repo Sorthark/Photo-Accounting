@@ -48,7 +48,7 @@ function handleSave() {
 
     <div class="settings-panel card">
       <h3>关于</h3>
-      <p class="about-text">摄影计账系统 v1.0 — 摄影工作室专用记账管理平台</p>
+      <p class="about-text">Photo Accounting v1.0 — Photography studio bookkeeping platform</p>
     </div>
   </div>
 </template>

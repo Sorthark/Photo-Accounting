@@ -43,8 +43,8 @@ async function handleLogin() {
         <div class="logo-wrap">
           <el-icon :size="32"><Camera /></el-icon>
         </div>
-        <h1>摄影计账系统</h1>
-        <p>摄影工作室专用记账管理平台</p>
+        <h1>Photo Accounting</h1>
+        <p>Photography studio bookkeeping platform</p>
       </div>
 
       <el-form class="login-form" @submit.prevent="handleLogin">
