@@ -1,61 +1,89 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import {
+  fetchMeApi,
+  loginApi,
+  registerApi,
+  updateProfileApi,
+  type AuthUser,
+} from '../api/auth'
+import { setToken, getToken } from '../api/client'
 
-const STORAGE_KEY = 'photo-accounting-auth'
+const USER_KEY = 'photo-accounting-user'
 
-interface AuthUser {
-  username: string
-  studioName: string
-}
-
-const DEMO_USERS: Record<string, { password: string; studioName: string }> = {
-  admin: { password: '123456', studioName: '摄影工作室' },
-  studio: { password: 'studio123', studioName: '摄影工作室' },
-}
-
-function loadSession(): AuthUser | null {
+function loadCachedUser(): AuthUser | null {
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(USER_KEY)
     return raw ? (JSON.parse(raw) as AuthUser) : null
   } catch {
     return null
   }
 }
 
+function cacheUser(user: AuthUser | null) {
+  if (user) localStorage.setItem(USER_KEY, JSON.stringify(user))
+  else localStorage.removeItem(USER_KEY)
+}
+
 export const useAuthStore = defineStore('auth', () => {
-  const user = ref<AuthUser | null>(loadSession())
+  const user = ref<AuthUser | null>(getToken() ? loadCachedUser() : null)
+  const bootstrapping = ref(false)
 
   const isLoggedIn = computed(() => user.value !== null)
   const studioName = computed(() => user.value?.studioName ?? '')
 
-  function login(username: string, password: string): boolean {
-    const account = DEMO_USERS[username.trim()]
-    if (!account || account.password !== password) return false
-
-    user.value = {
-      username: username.trim(),
-      studioName: account.studioName,
-    }
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(user.value))
+  async function login(username: string, password: string) {
+    const profile = await loginApi(username, password)
+    user.value = profile
+    cacheUser(profile)
     return true
+  }
+
+  async function register(username: string, password: string, studioNameValue: string) {
+    const profile = await registerApi(username, password, studioNameValue)
+    user.value = profile
+    cacheUser(profile)
+    return true
+  }
+
+  async function restoreSession() {
+    if (!getToken()) return false
+    bootstrapping.value = true
+    try {
+      const profile = await fetchMeApi()
+      user.value = profile
+      cacheUser(profile)
+      return true
+    } catch {
+      logout()
+      return false
+    } finally {
+      bootstrapping.value = false
+    }
   }
 
   function logout() {
     user.value = null
-    sessionStorage.removeItem(STORAGE_KEY)
+    setToken(null)
+    cacheUser(null)
   }
 
-  function updateStudioName(name: string) {
-    if (!user.value) return
-    user.value = { ...user.value, studioName: name }
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(user.value))
+  async function updateStudioName(name: string) {
+    await updateProfileApi(name)
+    if (user.value) {
+      user.value = { ...user.value, studioName: name }
+      cacheUser(user.value)
+    }
   }
 
   return {
     user,
+    bootstrapping,
     isLoggedIn,
     studioName,
     login,
+    register,
+    restoreSession,
     logout,
     updateStudioName,
   }

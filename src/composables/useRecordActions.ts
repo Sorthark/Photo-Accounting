@@ -1,5 +1,6 @@
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAccountingStore } from '../stores/accounting'
+import { getErrorMessage } from '../utils/error'
 
 export function useRecordActions() {
   const store = useAccountingStore()
@@ -19,10 +20,13 @@ export function useRecordActions() {
         type: 'warning',
         confirmButtonClass: 'el-button--danger',
       })
-      store.deleteRecord(id)
+      await store.deleteRecord(id)
       ElMessage.success('事项已删除')
       return true
-    } catch {
+    } catch (err) {
+      if (err !== 'cancel' && err !== 'close') {
+        ElMessage.error(getErrorMessage(err))
+      }
       return false
     }
   }
@@ -43,10 +47,13 @@ export function useRecordActions() {
           confirmButtonClass: 'el-button--danger',
         },
       )
-      store.deleteRecords(ids)
+      await store.deleteRecords(ids)
       ElMessage.success(`已删除 ${ids.length} 条事项`)
       return true
-    } catch {
+    } catch (err) {
+      if (err !== 'cancel' && err !== 'close') {
+        ElMessage.error(getErrorMessage(err))
+      }
       return false
     }
   }

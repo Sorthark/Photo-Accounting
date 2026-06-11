@@ -2,6 +2,7 @@
 import { reactive } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '../../stores/auth'
+import { getErrorMessage } from '../../utils/error'
 
 const authStore = useAuthStore()
 
@@ -10,13 +11,17 @@ const form = reactive({
   defaultLocation: '影棚',
 })
 
-function handleSave() {
+async function handleSave() {
   if (!form.studioName.trim()) {
     ElMessage.warning('请输入工作室名称')
     return
   }
-  authStore.updateStudioName(form.studioName.trim())
-  ElMessage.success('设置已保存')
+  try {
+    await authStore.updateStudioName(form.studioName.trim())
+    ElMessage.success('设置已保存')
+  } catch (err) {
+    ElMessage.error(getErrorMessage(err))
+  }
 }
 </script>
 

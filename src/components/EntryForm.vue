@@ -4,6 +4,7 @@ import { ElMessage } from 'element-plus'
 import { useAccountingStore } from '../stores/accounting'
 import { TIME_SLOTS } from '../utils/timeSlots'
 import { PROJECT_TYPE_LABEL } from '../utils/amount'
+import { getErrorMessage } from '../utils/error'
 import type { EntryFormData } from '../types'
 
 const store = useAccountingStore()
@@ -90,15 +91,22 @@ function validate(): boolean {
 function handleSave() {
   if (!validate()) return
 
-  if (store.editingId) {
-    store.updateRecord(store.editingId, { ...form })
-    store.setEditingId(null)
-    ElMessage.success('记录已更新，序号已重新排序')
-  } else {
-    store.addRecord({ ...form })
-    ElMessage.success('记录已保存，序号已自动生成')
+  const run = async () => {
+    try {
+      if (store.editingId) {
+        await store.updateRecord(store.editingId, { ...form })
+        store.setEditingId(null)
+        ElMessage.success('记录已更新，序号已重新排序')
+      } else {
+        await store.addRecord({ ...form })
+        ElMessage.success('记录已保存，序号已自动生成')
+      }
+      resetForm()
+    } catch (err) {
+      ElMessage.error(getErrorMessage(err))
+    }
   }
-  resetForm()
+  run()
 }
 
 function handleClear() {

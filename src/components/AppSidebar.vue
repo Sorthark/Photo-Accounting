@@ -33,6 +33,7 @@ function handleNav(key: NavItem) {
 
 function handleLogout() {
   authStore.logout()
+  store.resetData()
 }
 </script>
 

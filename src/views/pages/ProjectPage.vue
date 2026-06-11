@@ -4,6 +4,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { useAccountingStore } from '../../stores/accounting'
 import { PROJECT_TYPE_LABEL } from '../../utils/amount'
+import { getErrorMessage } from '../../utils/error'
 import type { ProjectFormData } from '../../types'
 
 const store = useAccountingStore()
@@ -43,26 +44,30 @@ function openEdit(id: string) {
   dialogVisible.value = true
 }
 
-function handleSave() {
+async function handleSave() {
   if (!form.name.trim()) {
     ElMessage.warning('请输入项目名称')
     return
   }
-  const payload: ProjectFormData = {
+  const payload = {
     name: form.name.trim(),
     color: form.color,
     type: form.type,
     defaultPrice: Math.abs(form.defaultPrice),
     defaultPostProcessingQty: Math.max(0, form.defaultPostProcessingQty),
   }
-  if (editingProjectId.value) {
-    store.updateProject(editingProjectId.value, payload)
-    ElMessage.success('项目已更新')
-  } else {
-    store.addProject(payload)
-    ElMessage.success('项目已添加')
+  try {
+    if (editingProjectId.value) {
+      await store.updateProject(editingProjectId.value, payload)
+      ElMessage.success('项目已更新')
+    } else {
+      await store.addProject(payload)
+      ElMessage.success('项目已添加')
+    }
+    dialogVisible.value = false
+  } catch (err) {
+    ElMessage.error(getErrorMessage(err))
   }
-  dialogVisible.value = false
 }
 
 async function handleDelete(id: string, name: string) {
@@ -77,10 +82,12 @@ async function handleDelete(id: string, name: string) {
       confirmButtonText: '删除',
       cancelButtonText: '取消',
     })
-    store.deleteProject(id)
+    await store.deleteProject(id)
     ElMessage.success('项目已删除')
-  } catch {
-    // cancelled
+  } catch (err) {
+    if (err !== 'cancel' && err !== 'close') {
+      ElMessage.error(getErrorMessage(err))
+    }
   }
 }
 </script>

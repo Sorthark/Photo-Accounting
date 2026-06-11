@@ -1,67 +1,68 @@
 # Photo Accounting
 
-A creamy white, eye-friendly photography studio bookkeeping web app.
+Photography studio bookkeeping — Vue 3 frontend + Express/SQLite backend.
 
-## Tech Stack
-
-- Vue 3 + TypeScript + Vite
-- Element Plus + Element Plus Icons
-- Pinia, Day.js, SCSS
-
-## Features
-
-- Login-protected dashboard
-- Calendar, entry form, income/expense tracking
-- Project management, statistics, CSV export
-- Hidden calendar easter egg (9+ entries per month)
-
-## Run Locally
+## Quick Start (Local)
 
 ```bash
+# Install frontend + backend dependencies
 npm install
+npm install --prefix server
+
+# Run web (5173) + API (3001) together
 npm run dev
 ```
 
 Open http://localhost:5173
 
-## Build
+### Default admin (created on first API start)
+
+| Username | Password |
+|----------|----------|
+| `admin`  | `123456` |
+
+New users can **Register** — each account has isolated projects & records on the server.
+
+## Production (Single Server)
+
+Build frontend and serve both from the API:
 
 ```bash
-npm run build
-npm run preview
+npm install
+npm install --prefix server
+cp server/.env.example server/.env   # edit JWT_SECRET & CLIENT_ORIGIN
+
+npm run start
 ```
 
-## Login (Demo Accounts)
+Open http://localhost:3001 (API serves `dist/` static files).
 
-The app uses **frontend demo authentication** — no backend server yet.
+### Remote deployment checklist
 
-| Username | Password   | Notes              |
-|----------|------------|--------------------|
-| `admin`  | `123456`   | Default admin      |
-| `studio` | `studio123`| Studio account     |
+1. Deploy to a VPS / Railway / Render with Node.js 20+
+2. Set environment variables in `server/.env`:
+   - `JWT_SECRET` — long random string
+   - `CLIENT_ORIGIN` — your public URL, e.g. `https://photo.example.com`
+   - `PORT` — host port (often `3001` or platform default)
+3. Run `npm run start`
+4. Put Nginx/Caddy in front with HTTPS (recommended)
+5. Share the public URL — users **Register** or use admin account
 
-Share the **deployed site URL** plus one of the accounts above so others can log in.
+## API Overview
 
-> Session is stored in the browser (`sessionStorage`). Closing the tab ends the session.
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/auth/register` | Register |
+| POST | `/api/auth/login` | Login → JWT |
+| GET | `/api/auth/me` | Current user |
+| GET | `/api/bootstrap` | Projects + records |
+| CRUD | `/api/projects`, `/api/records` | Data sync |
 
-## Share With Others (Deploy)
+Data is stored in `server/data/photo-accounting.db` (SQLite).
 
-1. Build: `npm run build`
-2. Deploy the `dist/` folder to any static host, for example:
-   - [GitHub Pages](https://pages.github.com/)
-   - [Vercel](https://vercel.com/)
-   - [Netlify](https://www.netlify.com/)
-3. Send collaborators the public URL and demo login credentials.
+## Tech Stack
 
-### GitHub Pages (example)
-
-```bash
-npm run build
-# Push dist to gh-pages branch or use GitHub Actions
-```
+- **Frontend:** Vue 3, Element Plus, Pinia, Vite
+- **Backend:** Express, better-sqlite3, JWT, bcrypt
 
 Repository: https://github.com/Sorthark/Photo-Accounting
-
-## Production Auth (Future)
-
-For real multi-user login, replace `src/stores/auth.ts` with a backend API (JWT/session) and user database. The current demo store is for prototyping only.

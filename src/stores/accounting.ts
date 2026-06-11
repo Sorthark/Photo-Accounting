@@ -1,6 +1,16 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import dayjs from 'dayjs'
+import {
+  batchDeleteRecordsApi,
+  createProjectApi,
+  createRecordApi,
+  deleteProjectApi,
+  deleteRecordApi,
+  fetchBootstrapApi,
+  updateProjectApi,
+  updateRecordApi,
+} from '../api/auth'
 import { getRecordSignedAmount, getSignedAmount } from '../utils/amount'
 import type {
   AccountingRecord,
@@ -9,125 +19,6 @@ import type {
   ProjectCategory,
   ProjectFormData,
 } from '../types'
-
-const DEFAULT_PROJECTS: ProjectCategory[] = [
-  {
-    id: 'portrait',
-    name: '写真',
-    color: '#4A7CF7',
-    type: 'income',
-    defaultPrice: 800,
-    defaultPostProcessingQty: 10,
-  },
-  {
-    id: 'ancient',
-    name: '古风',
-    color: '#6BA06B',
-    type: 'income',
-    defaultPrice: 1200,
-    defaultPostProcessingQty: 15,
-  },
-  {
-    id: 'couple',
-    name: '情侣',
-    color: '#E6A144',
-    type: 'income',
-    defaultPrice: 700,
-    defaultPostProcessingQty: 8,
-  },
-  {
-    id: 'hanfu',
-    name: '汉服',
-    color: '#A68AD4',
-    type: 'income',
-    defaultPrice: 500,
-    defaultPostProcessingQty: 5,
-  },
-  {
-    id: 'commercial',
-    name: '商拍',
-    color: '#C8B28A',
-    type: 'income',
-    defaultPrice: 150,
-    defaultPostProcessingQty: 2,
-  },
-  {
-    id: 'expense-props',
-    name: '道具采购',
-    color: '#E57373',
-    type: 'expense',
-    defaultPrice: 200,
-    defaultPostProcessingQty: 0,
-  },
-]
-
-const INITIAL_RECORDS: AccountingRecord[] = [
-  {
-    id: '1',
-    serialNo: '001',
-    date: '2026-01-10',
-    time: '10:00',
-    client: '沈清秋',
-    cn: '沈清秋',
-    projectId: 'portrait',
-    price: 800,
-    location: '影棚',
-    postProcessingQty: 10,
-    remarks: '',
-  },
-  {
-    id: '2',
-    serialNo: '002',
-    date: '2026-01-15',
-    time: '14:00',
-    client: '小王爷',
-    cn: '小王爷',
-    projectId: 'ancient',
-    price: 1200,
-    location: '外景',
-    postProcessingQty: 15,
-    remarks: '',
-  },
-  {
-    id: '3',
-    serialNo: '003',
-    date: '2026-01-22',
-    time: '09:30',
-    client: '苏苏',
-    cn: '苏苏',
-    projectId: 'couple',
-    price: 700,
-    location: '室内',
-    postProcessingQty: 8,
-    remarks: '',
-  },
-  {
-    id: '4',
-    serialNo: '004',
-    date: '2026-01-25',
-    time: '16:00',
-    client: '阿宁',
-    cn: '阿宁',
-    projectId: 'hanfu',
-    price: 500,
-    location: '外景',
-    postProcessingQty: 5,
-    remarks: '',
-  },
-  {
-    id: '5',
-    serialNo: '005',
-    date: '2026-01-28',
-    time: '11:00',
-    client: '小月',
-    cn: '小月',
-    projectId: 'commercial',
-    price: 150,
-    location: '影棚',
-    postProcessingQty: 2,
-    remarks: '',
-  },
-]
 
 function createEmptyForm(): EntryFormData {
   return {
@@ -141,17 +32,6 @@ function createEmptyForm(): EntryFormData {
     postProcessingQty: null,
     remarks: '',
   }
-}
-
-function sortAndReindexRecords(list: AccountingRecord[]) {
-  list.sort((a, b) => {
-    const dateCmp = a.date.localeCompare(b.date)
-    if (dateCmp !== 0) return dateCmp
-    return (a.time || '00:00').localeCompare(b.time || '00:00')
-  })
-  list.forEach((record, index) => {
-    record.serialNo = String(index + 1).padStart(3, '0')
-  })
 }
 
 function calcTotals(
@@ -172,15 +52,28 @@ function calcTotals(
   return { income, expense, net: income - expense }
 }
 
+function formToPayload(form: EntryFormData) {
+  return {
+    date: form.date,
+    time: form.time,
+    client: form.client,
+    cn: form.cn,
+    projectId: form.projectId,
+    price: Math.abs(form.price ?? 0),
+    location: form.location,
+    postProcessingQty: form.postProcessingQty ?? 0,
+    remarks: form.remarks,
+  }
+}
+
 export const useAccountingStore = defineStore('accounting', () => {
-  const projects = ref<ProjectCategory[]>([...DEFAULT_PROJECTS])
-  const records = ref<AccountingRecord[]>([...INITIAL_RECORDS])
+  const projects = ref<ProjectCategory[]>([])
+  const records = ref<AccountingRecord[]>([])
   const activeNav = ref<NavItem>('home')
   const calendarDate = ref(dayjs())
   const selectedDate = ref(dayjs().format('YYYY-MM-DD'))
   const editingId = ref<string | null>(null)
-
-  sortAndReindexRecords(records.value)
+  const loading = ref(false)
 
   const projectMap = computed(() =>
     Object.fromEntries(projects.value.map((p) => [p.id, p])),
@@ -202,11 +95,7 @@ export const useAccountingStore = defineStore('accounting', () => {
       }
     })
 
-    return {
-      stats,
-      ...totals,
-      totalCount: monthRecords.length,
-    }
+    return { stats, ...totals, totalCount: monthRecords.length }
   })
 
   const overallStats = computed(() => {
@@ -219,6 +108,23 @@ export const useAccountingStore = defineStore('accounting', () => {
   const selectedDateRecords = computed(() =>
     records.value.filter((r) => r.date === selectedDate.value),
   )
+
+  async function fetchAll() {
+    loading.value = true
+    try {
+      const data = await fetchBootstrapApi()
+      projects.value = data.projects
+      records.value = data.records
+    } finally {
+      loading.value = false
+    }
+  }
+
+  function resetData() {
+    projects.value = []
+    records.value = []
+    editingId.value = null
+  }
 
   function getProjectById(id: string) {
     return projectMap.value[id]
@@ -237,72 +143,65 @@ export const useAccountingStore = defineStore('accounting', () => {
     selectedDate.value = date
   }
 
-  function addRecord(form: EntryFormData) {
-    const record: AccountingRecord = {
-      id: Date.now().toString(),
-      serialNo: '',
-      date: form.date,
-      time: form.time,
-      client: form.client,
-      cn: form.cn,
-      projectId: form.projectId,
-      price: Math.abs(form.price ?? 0),
-      location: form.location,
-      postProcessingQty: form.postProcessingQty ?? 0,
-      remarks: form.remarks,
-    }
-    records.value.push(record)
-    sortAndReindexRecords(records.value)
+  async function addRecord(form: EntryFormData) {
+    const record = await createRecordApi(formToPayload(form))
+    records.value = [...records.value, record].sort((a, b) => {
+      const d = a.date.localeCompare(b.date)
+      return d !== 0 ? d : (a.time || '').localeCompare(b.time || '')
+    })
     navigateCalendarToDate(form.date)
   }
 
-  function updateRecord(id: string, form: EntryFormData) {
-    const index = records.value.findIndex((r) => r.id === id)
-    if (index === -1) return
-    records.value[index] = {
-      ...records.value[index],
-      date: form.date,
-      time: form.time,
-      client: form.client,
-      cn: form.cn,
-      projectId: form.projectId,
-      price: Math.abs(form.price ?? 0),
-      location: form.location,
-      postProcessingQty: form.postProcessingQty ?? 0,
-      remarks: form.remarks,
-    }
-    sortAndReindexRecords(records.value)
+  async function updateRecord(id: string, form: EntryFormData) {
+    const record = await updateRecordApi(id, formToPayload(form))
+    records.value = records.value
+      .map((r) => (r.id === id ? record : r))
+      .sort((a, b) => {
+        const d = a.date.localeCompare(b.date)
+        return d !== 0 ? d : (a.time || '').localeCompare(b.time || '')
+      })
     navigateCalendarToDate(form.date)
   }
 
-  function deleteRecord(id: string) {
+  async function deleteRecord(id: string) {
+    await deleteRecordApi(id)
     records.value = records.value.filter((r) => r.id !== id)
-    sortAndReindexRecords(records.value)
     if (editingId.value === id) editingId.value = null
   }
 
-  function deleteRecords(ids: string[]) {
+  async function deleteRecords(ids: string[]) {
+    await batchDeleteRecordsApi(ids)
     const idSet = new Set(ids)
     records.value = records.value.filter((r) => !idSet.has(r.id))
-    sortAndReindexRecords(records.value)
     if (editingId.value && idSet.has(editingId.value)) editingId.value = null
   }
 
-  function addProject(data: ProjectFormData) {
-    const id = `project-${Date.now()}`
-    projects.value.push({ id, ...data })
-    return id
+  async function addProject(data: ProjectFormData) {
+    const project = await createProjectApi({
+      name: data.name,
+      color: data.color,
+      type: data.type,
+      defaultPrice: data.defaultPrice,
+      defaultPostProcessingQty: data.defaultPostProcessingQty,
+    })
+    projects.value.push(project)
+    return project.id
   }
 
-  function updateProject(id: string, data: Partial<ProjectFormData>) {
+  async function updateProject(id: string, data: Partial<ProjectFormData>) {
+    const project = await updateProjectApi(id, {
+      name: data.name,
+      color: data.color,
+      type: data.type,
+      defaultPrice: data.defaultPrice,
+      defaultPostProcessingQty: data.defaultPostProcessingQty,
+    })
     const index = projects.value.findIndex((p) => p.id === id)
-    if (index === -1) return
-    projects.value[index] = { ...projects.value[index], ...data }
+    if (index !== -1) projects.value[index] = project
   }
 
-  function deleteProject(id: string) {
-    const inUse = records.value.some((r) => r.projectId === id)
-    if (inUse) return false
+  async function deleteProject(id: string) {
+    await deleteProjectApi(id)
     projects.value = projects.value.filter((p) => p.id !== id)
     return true
   }
@@ -337,10 +236,13 @@ export const useAccountingStore = defineStore('accounting', () => {
     calendarDate,
     selectedDate,
     editingId,
+    loading,
     projectMap,
     monthlyStats,
     overallStats,
     selectedDateRecords,
+    fetchAll,
+    resetData,
     getProjectById,
     getRecordsByDate,
     getProjectRecordCount,
@@ -360,5 +262,3 @@ export const useAccountingStore = defineStore('accounting', () => {
     exportRecords,
   }
 })
-
-export const PROJECTS = DEFAULT_PROJECTS
