@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { Component } from 'vue'
 import AppSidebar from '../components/AppSidebar.vue'
+import DesktopViewport from '../components/DesktopViewport.vue'
 import StatisticsPanel from '../components/StatisticsPanel.vue'
 import { useAccountingStore } from '../stores/accounting'
 import HomePage from './pages/HomePage.vue'
@@ -30,19 +31,22 @@ const showStatsPanel = computed(() => store.activeNav === 'home')
 </script>
 
 <template>
-  <div class="home-layout">
-    <AppSidebar />
-    <main class="main-content" :class="{ 'with-stats': showStatsPanel }">
-      <component :is="currentPage" />
-    </main>
-    <StatisticsPanel v-if="showStatsPanel" />
-  </div>
+  <DesktopViewport>
+    <div class="home-layout">
+      <AppSidebar />
+      <main class="main-content" :class="{ 'with-stats': showStatsPanel }">
+        <component :is="currentPage" />
+      </main>
+      <StatisticsPanel v-if="showStatsPanel" />
+    </div>
+  </DesktopViewport>
 </template>
 
 <style scoped lang="scss">
 @use '../styles/variables' as *;
 
 .home-layout {
+  min-width: $layout-min-width;
   min-height: 100vh;
   background: $color-bg;
 }
@@ -57,9 +61,4 @@ const showStatsPanel = computed(() => store.activeNav === 'home')
   }
 }
 
-@media (max-width: 1280px) {
-  .main-content.with-stats {
-    margin-right: 0;
-  }
-}
 </style>

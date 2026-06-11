@@ -20,6 +20,7 @@ body {
   color: $color-text;
   background: $color-bg;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 .card {
